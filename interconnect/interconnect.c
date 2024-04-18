@@ -14,6 +14,11 @@ typedef enum _bus_req_state
     WAITING_MEMORY
 } bus_req_state;
 
+typedef struct _snoop_recipients {
+    int procNum;
+    struct _snoop_recipients * next;
+}snoop_recipients;
+
 typedef struct _bus_req {
     bus_req_type brt;
     bus_req_state currentState;
@@ -22,8 +27,10 @@ typedef struct _bus_req {
     uint8_t shared;
     uint8_t data;
     uint8_t dataAvail;
+    struct snoop_recipients * snoop_arr;
     struct _bus_req* next;
 } bus_req;
+
 
 bus_req* pendingRequest = NULL;
 bus_req** queuedRequests;
@@ -150,9 +157,10 @@ static int busRequestQueueSize(int procNum)
 int countDown = 0;
 int lastProc = 0; // for round robin arbitration
 
-void registerCoher(coher* cc)
+void registerCoher(coher* cc, void ** coherStates)
 {
     coherComp = cc;
+    
 }
 
 void memReqCallback(int procNum, uint64_t addr)
@@ -213,6 +221,13 @@ void busReq(bus_req_type brt, uint64_t addr, int procNum)
         enqBusRequest(nextReq, procNum);
     }
 }
+
+snoop_recipients * check_sharers(uint64_t addr){
+    snoop_recipients * sharers = NULL;
+    for(int pNum=0; pNum<processorCount;pNum++){
+        coherence_states lookState = (coherence_states) tree_find(coherComp->coherStates[processorNum], addr);
+    } 
+} 
 
 int tick()
 {

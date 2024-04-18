@@ -59,7 +59,7 @@ coher* init(coher_sim_args* csa)
     self->invlReq = invlReq;
     self->registerCacheInterface = registerCacheInterface;
 
-    inter_sim->registerCoher(self);
+    inter_sim->registerCoher(self, coherStates);
 
     return self;
 }
