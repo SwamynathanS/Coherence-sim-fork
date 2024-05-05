@@ -38,12 +38,19 @@ typedef struct _bus_req {
     struct _bus_req* next;
 } bus_req;
 
-typedef struct _delayed_snoop {
+// typedef struct _delayed_snoop {
+//     bus_req_type brt;
+//     uint64_t addr;
+//     int procNum;
+//     int countdown;
+// } delayed_snoop;
+
+typedef struct _delayed_req {
     bus_req_type brt;
     uint64_t addr;
     int procNum;
     int countdown;
-} delayed_snoop;
+} delayed_req;
 
 bus_req* pendingRequest = NULL;
 bus_req** queuedRequests;
@@ -80,7 +87,7 @@ static const char* req_type_map[]
 
 const int CACHE_DELAY = 10;
 const int CACHE_TRANSFER = 10;
-const int DIRECTORY_DELAY = 6;
+const int DIRECTORY_DELAY = 0;
 
 // void registerCoher(coher* cc);
 // void busReq(bus_req_type brt, uint64_t addr, int procNum);
@@ -234,7 +241,7 @@ extern "C" void init_cpp(inter_sim_args* isa, interconn* self_c)
 
 int countDown = 0;
 int lastProc = 0; // for round robin arbitration
-std::vector<delayed_snoop> delayedSnoops;
+std::vector<delayed_req> delayedSnoops;
 
 extern "C" void busReq_cpp(bus_req_type brt, uint64_t addr, int procNum){
     if (pendingRequest == NULL)
@@ -318,10 +325,20 @@ void memReqCallback(int procNum, uint64_t addr)
 
 void sendOutSnoops() {
     for (int i = 0; i < delayedSnoops.size(); ++i) {
-        delayed_snoop snoop = delayedSnoops[i];
-        if (snoop.countdown <= 0) {
-            fprintf(stdout, "Sent snoop for proc %d\n", snoop.procNum);
-            coherComp->busReq(snoop.brt, snoop.addr, snoop.procNum);
+        delayed_req delayedRequest = delayedSnoops[i];
+        if (delayedRequest.countdown <= 0) {
+            fprintf(stdout, "Sent snoop for proc %d\n", delayedRequest.procNum);
+            
+            snoop_recipients sharers = check_sharers(delayedRequest.addr);
+            for(int j=0; j<sharers.size(); ++j){
+                if((sharers[j]== SHARED_STATE || sharers[j] == MODIFIED) && j != delayedRequest.procNum){
+                    numSnoops[j]++;
+                    coherComp->busReq(delayedRequest.brt, delayedRequest.addr, j);
+                    //if this was a readshared, we only need to snoop one cache to get data and correct state
+                    if((delayedRequest.brt) == READSHARED) break;  
+                }
+            }
+
             delayedSnoops.erase(delayedSnoops.begin() + i);
             i--;
             fprintf(stdout, "Now are %d delayedSnoops\n", delayedSnoops.size());
@@ -345,9 +362,10 @@ extern "C" int tick_cpp()
     {
         printInterconnState();
     }
-    tickDelayedSnoops();
     if (countDown > 0)
     {
+        tickDelayedSnoops();
+
         assert(pendingRequest != NULL);
         countDown--;
 
@@ -371,25 +389,32 @@ extern "C" int tick_cpp()
 
                 pendingRequest->currentState = WAITING_MEMORY;
 
-                snoop_recipients sharers = check_sharers(pendingRequest->addr);
-                for(int i=0; i<sharers.size(); ++i){
-                    if((sharers[i]== SHARED_STATE || sharers[i] == MODIFIED) && i != pendingRequest->procNum){
-                        numSnoops[i]++;
-                        // Enqueue the snoop
-                        delayed_snoop new_snoop;
-                        new_snoop.brt = pendingRequest->brt;
-                        new_snoop.addr = pendingRequest->addr;
-                        new_snoop.procNum = i;
-                        new_snoop.countdown = DIRECTORY_DELAY;
-                        delayedSnoops.push_back(new_snoop);
-                        fprintf(stdout, "Enqueued snoop for %d\n", new_snoop.procNum);
-                        sendOutSnoops();
-                        // coherComp->busReq(pendingRequest->brt,
-                        //                   pendingRequest->addr, i);
-                        //if this was a readshared, we only need to snoop one cache to get data and correct state
-                        if((pendingRequest->brt) == READSHARED) break;  
-                    }
-                }
+                // Setup a snoop with directory delay
+                delayed_req new_req;
+                new_req.brt = pendingRequest->brt;
+                new_req.addr = pendingRequest->addr;
+                new_req.procNum = pendingRequest->procNum;
+                new_req.countdown = DIRECTORY_DELAY;
+                sendOutSnoops();
+                // snoop_recipients sharers = check_sharers(pendingRequest->addr);
+                // for(int i=0; i<sharers.size(); ++i){
+                //     if((sharers[i]== SHARED_STATE || sharers[i] == MODIFIED) && i != pendingRequest->procNum){
+                //         numSnoops[i]++;
+                //         // Enqueue the snoop
+                //         delayed_snoop new_snoop;
+                //         new_snoop.brt = pendingRequest->brt;
+                //         new_snoop.addr = pendingRequest->addr;
+                //         new_snoop.procNum = i;
+                //         new_snoop.countdown = DIRECTORY_DELAY;
+                //         delayedSnoops.push_back(new_snoop);
+                //         fprintf(stdout, "Enqueued snoop for %d\n", new_snoop.procNum);
+                //         sendOutSnoops();
+                //         // coherComp->busReq(pendingRequest->brt,
+                //         //                   pendingRequest->addr, i);
+                //         //if this was a readshared, we only need to snoop one cache to get data and correct state
+                //         if((pendingRequest->brt) == READSHARED) break;  
+                //     }
+                // }
                 // Make a vector of structs containing pendingRequest->brt, addr, i, countdown
                 // On each tick, update all elements of the vector and send as necessary
                 // MAke this a function so 0-tick elements work
