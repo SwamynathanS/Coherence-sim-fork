@@ -199,7 +199,7 @@ static int busRequestQueueSize(int procNum)
 extern "C" void init_cpp(inter_sim_args* isa, interconn* self_c)
 {
     int op;
-    std::cout <<"Called from INIT CPP";
+    // std::cout <<"Called from INIT CPP";
     while ((op = getopt(isa->arg_count, isa->arg_list, "v")) != -1)
     {
         switch (op)
