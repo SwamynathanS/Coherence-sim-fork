@@ -8,7 +8,9 @@
 interconn * self_c;
 
 void busReq(bus_req_type brt, uint64_t addr, int procNum){
+    fprintf(stdout, "Intercon busreq...");
     busReq_cpp(brt, addr, procNum);
+    fprintf(stdout, "done\n");
 }
 
 
@@ -19,13 +21,19 @@ void registerCoher(coher* cc, void ** cohStateTree)
 
 int tick()
 {
-    return tick_cpp();
+    fprintf(stdout, "tickcpp...");
+    int res = tick_cpp();
+    fprintf(stdout, "cppdone\n");
+    return res;
 }
 // Return a non-zero value if the current request
 // was satisfied by a cache-to-cache transfer.
 int busReqCacheTransfer(uint64_t addr, int procNum)
 {
-    return busReqCacheTransfer_cpp(addr, procNum);
+    fprintf(stdout, "busReqCacheTransfer...");
+    int res = busReqCacheTransfer_cpp(addr, procNum);
+    fprintf(stdout, "done\n");
+    return res;
 }
 
  int finish(int outFd)

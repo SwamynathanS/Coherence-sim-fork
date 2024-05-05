@@ -1,0 +1,6 @@
+Inteconnect Stats 
+Number of Snoops Recieved
+  Core 0: 0
+  Core 1: 0
+  Core 2: 0
+  Core 3: 0

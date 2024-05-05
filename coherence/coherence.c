@@ -75,8 +75,10 @@ void registerCacheInterface(void (*callback)(int, int, int64_t))
 //looks up the tree to get the state of an address in another processor
 coherence_states getState(uint64_t addr, int processorNum)
 {
+    fprintf(stdout, "coherence getState...");
     coherence_states lookState
         = (coherence_states)tree_find(coherStates[processorNum], addr);
+    fprintf(stdout, "done\n");
     if (lookState == UNDEF)
         return INVALID;
 
@@ -85,11 +87,14 @@ coherence_states getState(uint64_t addr, int processorNum)
 
 void setState(uint64_t addr, int processorNum, coherence_states nextState)
 {
+    fprintf(stdout, "coherence setState...");
     tree_insert(coherStates[processorNum], addr, (void*)nextState);
+    fprintf(stdout, "done\n");
 }
 
 uint8_t busReq(bus_req_type reqType, uint64_t addr, int processorNum)
 {
+    fprintf(stdout, "coherence busReq...");
     if (processorNum < 0 || processorNum >= processorCount)
     {
         // ERROR
@@ -150,7 +155,7 @@ uint8_t busReq(bus_req_type reqType, uint64_t addr, int processorNum)
     {
         setState(addr, processorNum, nextState);
     }
-  
+    fprintf(stdout, "done\n");
     return 0;
 }
 
@@ -158,6 +163,8 @@ uint8_t busReq(bus_req_type reqType, uint64_t addr, int processorNum)
 
 uint8_t permReq(uint8_t is_read, uint64_t addr, int processorNum)
 {
+    fprintf(stdout, "coherence permReq...");
+
     if (processorNum < 0 || processorNum >= processorCount)
     {
         // ERROR
@@ -202,11 +209,13 @@ uint8_t permReq(uint8_t is_read, uint64_t addr, int processorNum)
     }
   
     setState(addr, processorNum, nextState);
+    fprintf(stdout, "done\n");
     return permAvail;
 }
 
 uint8_t invlReq(uint64_t addr, int processorNum)
 {
+    fprintf(stdout, "coherence invlReq...");
     coherence_states currentState, nextState = INVALID;
     cache_action ca;
     uint8_t flush;
@@ -258,7 +267,7 @@ uint8_t invlReq(uint64_t addr, int processorNum)
     }
 
     tree_remove(coherStates[processorNum], addr);
-
+    fprintf(stdout, "done\n");
     // Notify about "permReqOnFlush".
     return flush;
 }

@@ -35,6 +35,7 @@ typedef struct _bus_req {
     struct _bus_req* next;
 } bus_req;
 
+extern "C" void* tree_find(tree_t*, tkey_t);
 
 bus_req* pendingRequest = NULL;
 bus_req** queuedRequests;
@@ -75,6 +76,7 @@ void interconnNotifyState(void);
 using namespace std;
 
 snoop_recipients check_sharers(uint64_t addr){
+    std::cout <<  "checking sharers...";
     snoop_recipients sharers ;
     for(int pNum=0; pNum<processorCount;pNum++){
         void * treestate = tree_find(coherStates[pNum], addr);
@@ -82,6 +84,7 @@ snoop_recipients check_sharers(uint64_t addr){
         sharers.push_back(*reinterpret_cast<coherence_states*>(treestate));
     }
     assert(sharers.size() == processorCount); 
+    std::cout << "done\n";
     return sharers; 
 } 
 // Helper methods for per-processor request queues.

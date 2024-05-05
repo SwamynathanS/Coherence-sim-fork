@@ -100,6 +100,7 @@ void memOpCallback(int procNum, int64_t tag)
 
 int tick(void)
 {
+    fprintf(stdout, "procTick...");
     // if room in pipeline, request op from trace
     //   for the sample processor, it requests an op
     //   each tick until it reaches a branch or memory op
@@ -178,7 +179,7 @@ int tick(void)
 
         free(nextOp);
     }
-
+    fprintf(stdout, "done\n");
     return progress;
 }
 
