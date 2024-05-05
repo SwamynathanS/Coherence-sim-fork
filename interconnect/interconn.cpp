@@ -172,7 +172,6 @@ static bus_req* deqBusRequest(int procNum)
     {
         queuedRequests[procNum] = ret->next;
     }
-
     return ret;
 }
 
@@ -232,6 +231,7 @@ bool snoopSent = false;
 int snoopCountDown = 0;
 
 extern "C" void busReq_cpp(bus_req_type brt, uint64_t addr, int procNum){
+    fprintf(stdout, "Intercon busReq called\n");
     if (pendingRequest == NULL)
     {
         assert(brt != SHARED);
@@ -248,6 +248,7 @@ extern "C" void busReq_cpp(bus_req_type brt, uint64_t addr, int procNum){
 
         pendingRequest = nextReq;
         countDown = CACHE_DELAY;
+        fprintf(stdout, "Serving req for proc %d on addr %lx\n", pendingRequest->procNum, pendingRequest->addr);
 
         return;
     }
@@ -325,6 +326,7 @@ extern "C" int tick_cpp()
 
     if (countDown > 0)
     {
+        fprintf(stdout, " - counting %d\n", countDown);
         assert(pendingRequest != NULL);
         countDown--;
 
@@ -366,6 +368,7 @@ extern "C" int tick_cpp()
                                       pendingRequest->procNum, memReqCallback);
 
                 pendingRequest->currentState = WAITING_MEMORY;
+                fprintf(stdout, "Dir lookup initiated\n");
 
                 // Kick off directory delay
                 snoopSent = false;
@@ -415,6 +418,7 @@ extern "C" int tick_cpp()
     }
     else if (countDown == 0)
     {
+        fprintf(stdout, "counted down\n");
         for (int i = 0; i < processorCount; i++)
         {
             int pos = (i + lastProc) % processorCount;
@@ -426,6 +430,8 @@ extern "C" int tick_cpp()
                 pendingRequest->currentState = WAITING_CACHE;
 
                 lastProc = (pos + 1) % processorCount;
+                fprintf(stdout, "Serving req for proc %d on addr %lx\n", pendingRequest->procNum, pendingRequest->addr);
+
                 break;
             }
         }
