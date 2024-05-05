@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <sstream>
 #include <cstdint>
+#include <random>
 
 typedef std::vector<coherence_states> snoop_recipients;
 
@@ -73,8 +74,10 @@ static const char* req_type_map[]
 
 
 const int CACHE_DELAY = 16; // Changed from 10 to simulate directory delay
+const int DIRECTORY_DELAY = 6;
+const int MISPRED_PENALTY = 6;
 const int CACHE_TRANSFER = 10;
-
+const float predictorAccuracy =0.5;
 // void registerCoher(coher* cc);
 // void busReq(bus_req_type brt, uint64_t addr, int procNum);
 // int busReqCacheTransfer(uint64_t addr, int procNum);
@@ -111,11 +114,24 @@ coherence_states getCohFromInt(long unsigned int value){
     return UNDEF;
 }
 
-snoop_recipients check_sharers(uint64_t addr, bool isInCP=true){
-    snoop_recipients sharers ;
-    if(isInCP){
+bool predictorResultCorrect(){
+    //TODO: Modify this with actual predictor
+    static std::default_random_engine gen;
+    static std::bernoulli_distribution dist(predictorAccuracy);
+    return dist(gen);
+}
+
+int getBusReqDelay(){
+    if(predictorResultCorrect()){
+        return CACHE_DELAY - DIRECTORY_DELAY; //we did not incur directory lookup on critical path 
+    }else{
         numCPDirAccesses++;
+        return CACHE_DELAY + MISPRED_PENALTY; // we incur the original delay + and additional penalty 
     }
+}
+
+snoop_recipients check_sharers(uint64_t addr){
+    snoop_recipients sharers ;
     for(int pNum=0; pNum<processorCount;pNum++){
         void * treestate = tree_find(coherStates[pNum], addr);
         // *reinterpret_cast<double*>(&treestate)
@@ -244,7 +260,7 @@ extern "C" void busReq_cpp(bus_req_type brt, uint64_t addr, int procNum){
 
 
         pendingRequest = nextReq;
-        countDown = CACHE_DELAY;
+        countDown = getBusReqDelay();
 
         return;
     }
@@ -394,7 +410,7 @@ extern "C" int tick_cpp()
             {
                 pendingRequest = deqBusRequest(pos);
                 pendingRequest->enqTick = double(tick_count_gl);
-                countDown = CACHE_DELAY;
+                countDown = getBusReqDelay();
                 pendingRequest->currentState = WAITING_CACHE;
 
                 lastProc = (pos + 1) % processorCount;
@@ -471,6 +487,7 @@ extern "C" int finish_cpp(int outFd){
     FILE* file = fdopen(outFd, "w");
     if(file != nullptr){
         std::ostringstream oss;
+        oss << "Total Ticks: " << tick_count_gl << std::endl;
         oss << "Inteconnect Stats "<<std::endl;
         oss << "Number of Snoops Recieved"<<std::endl;
         for(int i=0; i<processorCount; ++i){
