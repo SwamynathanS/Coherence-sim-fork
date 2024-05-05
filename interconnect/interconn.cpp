@@ -343,16 +343,28 @@ extern "C" int tick_cpp()
 
                 pendingRequest->currentState = WAITING_MEMORY;
 
-                snoop_recipients sharers = check_sharers(pendingRequest->addr);
-                for(int i=0; i<sharers.size(); ++i){
-                    if((sharers[i]== SHARED_STATE || sharers[i] == MODIFIED) && i != pendingRequest->procNum){
+                // The processors will snoop for this request as well.
+                for (int i = 0; i < processorCount; i++)
+                {
+                    if (pendingRequest->procNum != i)
+                    {
                         numSnoops[i]++;
                         coherComp->busReq(pendingRequest->brt,
                                           pendingRequest->addr, i);
-                        //if this was a readshared, we only need to snoop one cache to get data and correct state
-                        if((pendingRequest->brt) == READSHARED) break;  
                     }
                 }
+
+
+                // snoop_recipients sharers = check_sharers(pendingRequest->addr);
+                // for(int i=0; i<sharers.size(); ++i){
+                //     if((sharers[i]== SHARED_STATE || sharers[i] == MODIFIED) && i != pendingRequest->procNum){
+                //         numSnoops[i]++;
+                //         coherComp->busReq(pendingRequest->brt,
+                //                           pendingRequest->addr, i);
+                //         //if this was a readshared, we only need to snoop one cache to get data and correct state
+                //         if((pendingRequest->brt) == READSHARED) break;  
+                //     }
+                // }
 
                 if (pendingRequest->data == 1)
                 {
