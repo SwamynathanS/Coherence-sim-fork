@@ -173,8 +173,8 @@ void memReqCallback(int procNum, uint64_t addr)
 
 void busReq(bus_req_type brt, uint64_t addr, int procNum)
 {
-    bus_req_count++;
     if (pendingRequest == NULL) { // Dequeue a request and put in in current
+        bus_req_count++;
         assert(brt != SHARED);
 
         bus_req* nextReq = calloc(1, sizeof(bus_req));
@@ -191,6 +191,7 @@ void busReq(bus_req_type brt, uint64_t addr, int procNum)
 
 
     } else if (brt == SHARED && pendingRequest->addr == addr) {
+        bus_req_count++;
         pendingRequest->shared = 1;
 
     } else if (brt == DATA && pendingRequest->addr == addr) {   
@@ -200,12 +201,12 @@ void busReq(bus_req_type brt, uint64_t addr, int procNum)
 
         if (pendingRequest->currentState == WAITING_MEMORY) {
             // This DATA busReq addresses the current pending request
+            bus_req_count++;
             pendingRequest->data = 1;
             pendingRequest->currentState = TRANSFERING_CACHE;
             countDown = CACHE_TRANSFER;
             return;
         } else {
-            bus_req_count--;
             if (CADSS_VERBOSE && PENDING_REQUEST_DEBUG) {
             // pendingRequest was already served by another proc's DATA busReq
             // Occurs because all sharing procs snoop a READ(X), and send data.
@@ -215,6 +216,7 @@ void busReq(bus_req_type brt, uint64_t addr, int procNum)
         }
     } else {
         assert(brt != SHARED);
+        bus_req_count++;
 
         bus_req* nextReq = calloc(1, sizeof(bus_req));
         nextReq->brt = brt;

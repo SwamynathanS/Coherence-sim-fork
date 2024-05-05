@@ -1,0 +1,17 @@
+Inteconnect Stats 
+Number of Snoops Recieved
+  Core 0: 2
+  Core 1: 1
+  Core 2: 0
+  Core 3: 0
+Number of Critical Path Directory Accesses: 6
+Number of Accesses: 
+  Core 0: 2
+  Core 1: 2
+  Core 2: 1
+  Core 3: 1
+Average Memory Access Time (AMAT): 
+  Core 0: 100
+  Core 1: 60
+  Core 2: 20
+  Core 3: 100
