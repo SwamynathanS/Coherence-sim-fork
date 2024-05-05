@@ -316,6 +316,25 @@ void memReqCallback(int procNum, uint64_t addr)
     }
 }
 
+void sendOutSnoops() {
+    for (int i = 0; i < delayedSnoops.size(); ++i) {
+        delayed_snoop snoop = delayedSnoops[i];
+        if (snoop.countdown <= 0) {
+            fprintf(stdout, "Sent snoop for proc %d\n", snoop.procNum);
+            coherComp->busReq(snoop.brt, snoop.addr, snoop.procNum);
+            delayedSnoops.erase(delayedSnoops.begin() + i);
+            i--;
+        }
+    }
+}
+
+void tickDelayedSnoops() {
+    for (int i = 0; i < delayedSnoops.size(); ++i) {
+        delayedSnoops[i].countdown -= 1;
+        fprintf(stdout, "snoop for %d dec to %d\n", delayedSnoops[i].procNum, delayedSnoops[i].countdown);
+    }
+    sendOutSnoops();
+}
 
 extern "C" int tick_cpp()
 {
@@ -325,7 +344,7 @@ extern "C" int tick_cpp()
     {
         printInterconnState();
     }
-
+    tickDelayedSnoops();
     if (countDown > 0)
     {
         assert(pendingRequest != NULL);
@@ -362,9 +381,9 @@ extern "C" int tick_cpp()
                         new_snoop.procNum = i;
                         new_snoop.countdown = DIRECTORY_DELAY;
                         delayedSnoops.push_back(new_snoop);
-
-                        coherComp->busReq(pendingRequest->brt,
-                                          pendingRequest->addr, i);
+                        sendOutSnoops();
+                        // coherComp->busReq(pendingRequest->brt,
+                        //                   pendingRequest->addr, i);
                         //if this was a readshared, we only need to snoop one cache to get data and correct state
                         if((pendingRequest->brt) == READSHARED) break;  
                     }
