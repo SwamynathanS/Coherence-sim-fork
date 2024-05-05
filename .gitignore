@@ -14,3 +14,4 @@ memory/libmemory.so
 simpleCache/libsimpleCache.so
 branchCPP/libbranchCPP.so
 build/
+interconnect_stats.txt
