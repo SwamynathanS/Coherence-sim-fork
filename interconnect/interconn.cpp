@@ -87,7 +87,7 @@ static const char* req_type_map[]
 
 const int CACHE_DELAY = 10;
 const int CACHE_TRANSFER = 10;
-const int DIRECTORY_DELAY = 0;
+const int DIRECTORY_DELAY = 6;
 
 // void registerCoher(coher* cc);
 // void busReq(bus_req_type brt, uint64_t addr, int procNum);
@@ -395,29 +395,8 @@ extern "C" int tick_cpp()
                 new_req.addr = pendingRequest->addr;
                 new_req.procNum = pendingRequest->procNum;
                 new_req.countdown = DIRECTORY_DELAY;
+                delayedSnoops.emplace_back(new_req);
                 sendOutSnoops();
-                // snoop_recipients sharers = check_sharers(pendingRequest->addr);
-                // for(int i=0; i<sharers.size(); ++i){
-                //     if((sharers[i]== SHARED_STATE || sharers[i] == MODIFIED) && i != pendingRequest->procNum){
-                //         numSnoops[i]++;
-                //         // Enqueue the snoop
-                //         delayed_snoop new_snoop;
-                //         new_snoop.brt = pendingRequest->brt;
-                //         new_snoop.addr = pendingRequest->addr;
-                //         new_snoop.procNum = i;
-                //         new_snoop.countdown = DIRECTORY_DELAY;
-                //         delayedSnoops.push_back(new_snoop);
-                //         fprintf(stdout, "Enqueued snoop for %d\n", new_snoop.procNum);
-                //         sendOutSnoops();
-                //         // coherComp->busReq(pendingRequest->brt,
-                //         //                   pendingRequest->addr, i);
-                //         //if this was a readshared, we only need to snoop one cache to get data and correct state
-                //         if((pendingRequest->brt) == READSHARED) break;  
-                //     }
-                // }
-                // Make a vector of structs containing pendingRequest->brt, addr, i, countdown
-                // On each tick, update all elements of the vector and send as necessary
-                // MAke this a function so 0-tick elements work
 
                 if (pendingRequest->data == 1)
                 {
