@@ -368,22 +368,11 @@ extern "C" int tick_cpp()
                                       pendingRequest->procNum, memReqCallback);
 
                 pendingRequest->currentState = WAITING_MEMORY;
-                fprintf(stdout, "Dir lookup initiated\n");
+                // fprintf(stdout, "Directory lookup initiated\n");
 
                 // Kick off directory delay
                 snoopSent = false;
                 snoopCountDown = DIRECTORY_DELAY;
-
-                // snoop_recipients sharers = check_sharers(pendingRequest->addr);
-                // for(int i=0; i<sharers.size(); ++i){
-                //     if((sharers[i]== SHARED_STATE || sharers[i] == MODIFIED) && i != pendingRequest->procNum){
-                //         numSnoops[i]++;
-                //         coherComp->busReq(pendingRequest->brt,
-                //                           pendingRequest->addr, i);
-                //         //if this was a readshared, we only need to snoop one cache to get data and correct state
-                //         if((pendingRequest->brt) == READSHARED) break;  
-                //     }
-                // }
 
                 if (pendingRequest->data == 1)
                 {
