@@ -74,7 +74,7 @@ static const char* req_type_map[]
 
 const int CACHE_DELAY = 10;
 const int CACHE_TRANSFER = 10;
-const int DIRECTORY_DELAY = 0;
+const int DIRECTORY_DELAY = 6;
 
 // void registerCoher(coher* cc);
 // void busReq(bus_req_type brt, uint64_t addr, int procNum);
@@ -311,20 +311,6 @@ void memReqCallback(int procNum, uint64_t addr)
 }
 
 
-void send_snoops() {
-    snoop_recipients sharers = check_sharers(pendingRequest->addr);
-    for(int i=0; i<sharers.size(); ++i){
-        if((sharers[i]== SHARED_STATE || sharers[i] == MODIFIED) && i != pendingRequest->procNum){
-            numSnoops[i]++;
-            coherComp->busReq(pendingRequest->brt,
-                                pendingRequest->addr, i);
-            //if this was a readshared, we only need to snoop one cache to get data and correct state
-            if((pendingRequest->brt) == READSHARED) break;  
-        }
-    }
-    snoopSent = true;
-}
-
 extern "C" int tick_cpp()
 {
     memComp->si.tick();
@@ -350,8 +336,19 @@ extern "C" int tick_cpp()
             countDown = 0;
         }
 
-        if (!snoopSent && snoopCountDown == 0) send_snoops();
-        
+        if (!snoopSent && snoopCountDown == 0) {
+            snoop_recipients sharers = check_sharers(pendingRequest->addr);
+            for(int i=0; i<sharers.size(); ++i){
+                if((sharers[i]== SHARED_STATE || sharers[i] == MODIFIED) && i != pendingRequest->procNum){
+                    numSnoops[i]++;
+                    coherComp->busReq(pendingRequest->brt,
+                                        pendingRequest->addr, i);
+                    //if this was a readshared, we only need to snoop one cache to get data and correct state
+                    if((pendingRequest->brt) == READSHARED) break;  
+                }
+            }
+            snoopSent = true;
+        }
 
         if (countDown == 0)
         {
@@ -368,8 +365,20 @@ extern "C" int tick_cpp()
                 snoopSent = false;
                 snoopCountDown = DIRECTORY_DELAY;
 
-                if (!snoopSent && snoopCountDown == 0) send_snoops();
-                
+                if (!snoopSent && snoopCountDown == 0) {
+                    snoop_recipients sharers = check_sharers(pendingRequest->addr);
+                    for(int i=0; i<sharers.size(); ++i){
+                        if((sharers[i]== SHARED_STATE || sharers[i] == MODIFIED) && i != pendingRequest->procNum){
+                            numSnoops[i]++;
+                            coherComp->busReq(pendingRequest->brt,
+                                                pendingRequest->addr, i);
+                            //if this was a readshared, we only need to snoop one cache to get data and correct state
+                            if((pendingRequest->brt) == READSHARED) break;  
+                        }
+                    }
+                    snoopSent = true;
+                }
+
                 if (pendingRequest->data == 1)
                 {
                     pendingRequest->brt = DATA;
