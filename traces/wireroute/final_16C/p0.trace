@@ -524,7 +524,7 @@ L 0x1ffff89d2d2, 69420
 L 0x1555555ee0b, 69420
 S 0x1ffffffff86, 69420
 S 0x15555562fc7, 69420
-[C 12] WARN: L 0x1ffff60ccb6, 69420
+L 0x1ffff60ccb6, 69420
 S 0x1ffff400613, 69420
 L 0x1ffff5ccbe8, 69420
 S 0x1ffff5ccbb9, 69420
