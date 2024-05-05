@@ -324,6 +324,7 @@ void sendOutSnoops() {
             coherComp->busReq(snoop.brt, snoop.addr, snoop.procNum);
             delayedSnoops.erase(delayedSnoops.begin() + i);
             i--;
+            fprintf(stdout, "Now are %d delayedSnoops\n", delayedSnoops.size());
         }
     }
 }
@@ -381,6 +382,7 @@ extern "C" int tick_cpp()
                         new_snoop.procNum = i;
                         new_snoop.countdown = DIRECTORY_DELAY;
                         delayedSnoops.push_back(new_snoop);
+                        fprintf(stdout, "Enqueued snoop for %d\n", new_snoop.procNum);
                         sendOutSnoops();
                         // coherComp->busReq(pendingRequest->brt,
                         //                   pendingRequest->addr, i);
