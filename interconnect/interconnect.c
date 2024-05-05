@@ -34,6 +34,8 @@ memory* memComp;
 int CADSS_VERBOSE = 0;
 int processorCount = 1;
 int PENDING_REQUEST_DEBUG = 0;
+int snoops = 0;
+int bus_req_count = 0;
 
 static const char* req_state_map[] = {
     [NONE] = "None",
@@ -171,6 +173,7 @@ void memReqCallback(int procNum, uint64_t addr)
 
 void busReq(bus_req_type brt, uint64_t addr, int procNum)
 {
+    bus_req_count++;
     if (pendingRequest == NULL) { // Dequeue a request and put in in current
         assert(brt != SHARED);
 
@@ -201,11 +204,14 @@ void busReq(bus_req_type brt, uint64_t addr, int procNum)
             pendingRequest->currentState = TRANSFERING_CACHE;
             countDown = CACHE_TRANSFER;
             return;
-        } else if (CADSS_VERBOSE && PENDING_REQUEST_DEBUG) {
+        } else {
+            bus_req_count--;
+            if (CADSS_VERBOSE && PENDING_REQUEST_DEBUG) {
             // pendingRequest was already served by another proc's DATA busReq
             // Occurs because all sharing procs snoop a READ(X), and send data.
             // With correct directory/arbitration, this should not trigger
-            fprintf(stdout, "Duplicate DATA busReq received from proc , ignoring.\n");
+                fprintf(stdout, "Duplicate DATA busReq received from proc , ignoring.\n");
+            }
         }
     } else {
         assert(brt != SHARED);
@@ -219,6 +225,8 @@ void busReq(bus_req_type brt, uint64_t addr, int procNum)
 
         enqBusRequest(nextReq, procNum);
     }
+    fprintf(stdout, "bus reqs: %d\n", bus_req_count);
+
 }
 
 int tick()
@@ -265,6 +273,7 @@ int tick()
                 {
                     if (pendingRequest->procNum != i)
                     {
+                        snoops++;
                         coherComp->busReq(pendingRequest->brt,
                                           pendingRequest->addr, i);
                     }
@@ -286,12 +295,14 @@ int tick()
                 if (CADSS_VERBOSE && PENDING_REQUEST_DEBUG) {
                     fprintf(stdout, "pendingRequest(proc=%d) completed by mem\n", pendingRequest->procNum);
                 }
+                snoops++;
                 coherComp->busReq(brt, pendingRequest->addr,
                                   pendingRequest->procNum);
               
                 interconnNotifyState();
                 free(pendingRequest);
                 pendingRequest = NULL;
+                fprintf(stdout, "Snoops: %d\n", snoops);
             }
             else if (pendingRequest->currentState == TRANSFERING_CACHE)
             {
@@ -301,12 +312,14 @@ int tick()
                 if (CADSS_VERBOSE && PENDING_REQUEST_DEBUG) {
                     fprintf(stdout, "pendingRequest(proc=%d) completed by cache\n", pendingRequest->procNum);
                 }
+                snoops++;
                 coherComp->busReq(brt, pendingRequest->addr,
                                   pendingRequest->procNum);
 
                 interconnNotifyState();
                 free(pendingRequest);
                 pendingRequest = NULL;
+                fprintf(stdout, "Snoops: %d\n", snoops);
             }
         }
     }
@@ -394,6 +407,7 @@ int busReqCacheTransfer(uint64_t addr, int procNum)
 
 int finish(int outFd)
 {
+    fprintf(stdout, "Hi: %d\n", snoops);
     memComp->si.finish(outFd);
     return 0;
 }

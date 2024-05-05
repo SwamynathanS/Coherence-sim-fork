@@ -196,7 +196,6 @@ uint8_t permReq(uint8_t is_read, uint64_t addr, int processorNum)
         fprintf(stdout, "permReq(read=%i, addr=0x%lx, proc=%i): %s -> %s\n", is_read, addr, 
             processorNum, coherence_state_map[currentState], coherence_state_map[nextState]);
     }
-  
     setState(addr, processorNum, nextState);
     return permAvail;
 }
