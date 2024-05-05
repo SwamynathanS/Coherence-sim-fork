@@ -14,7 +14,7 @@ interconn* interComp;
 int countDown = 0;
 
 // This is the same as "BUS_TIME".
-const int DRAM_FETCH_TICKS = 90;
+const int DRAM_FETCH_TICKS = 84; // Changed from 90 to support directory delay
 
 memory* init(memory_sim_args* args)
 {

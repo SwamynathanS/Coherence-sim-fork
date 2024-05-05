@@ -72,7 +72,7 @@ static const char* req_type_map[]
        [DATA] = "Data",   [SHARED] = "Shared", [MEMORY] = "Memory"};
 
 
-const int CACHE_DELAY = 10;
+const int CACHE_DELAY = 16; // Changed from 10 to simulate directory delay
 const int CACHE_TRANSFER = 10;
 
 // void registerCoher(coher* cc);
